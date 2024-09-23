@@ -1,0 +1,30 @@
+[project]
+name = "gan-lab-tensorflow"
+version = "0.1.0"
+description = "A TensorFlow GAN lab for synthetic distributions and image-generation experiments."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "yabtesfu" }]
+license = "MIT"
+dependencies = [
+  "numpy>=1.24",
+  "matplotlib>=3.8",
+  "tensorflow>=2.15; python_version < '3.13'"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.4"
+]
+notebook = [
+  "jupyter>=1.0",
+  "pandas>=2.0"
+]
+
+[project.scripts]
+gan-lab = "gan_lab_tensorflow.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
