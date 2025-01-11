@@ -1,18 +1,35 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "gan-lab-tensorflow"
-version = "0.1.0"
-description = "A TensorFlow GAN lab for synthetic distributions and image-generation experiments."
+version = "0.2.0"
+description = "A TensorFlow GAN lab plus a real-time, steerable GAN training observatory."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "yabtesfu" }]
 license = "MIT"
+# Core install is lightweight: only NumPy. The TensorFlow/Keras models and the
+# matplotlib helpers are imported lazily, so they are opt-in extras -- this is
+# what lets the real-time observatory run (and containerise) without a 500 MB
+# TensorFlow install.
 dependencies = [
-  "numpy>=1.24",
-  "matplotlib>=3.8",
-  "tensorflow>=2.15; python_version < '3.13'"
+  "numpy>=1.24"
 ]
 
 [project.optional-dependencies]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "websockets>=12.0"
+]
+tf = [
+  "tensorflow>=2.15; python_version < '3.13'"
+]
+viz = [
+  "matplotlib>=3.8"
+]
 dev = [
   "pytest>=8.0",
   "ruff>=0.4"
@@ -25,6 +42,11 @@ notebook = [
 [project.scripts]
 gan-lab = "gan_lab_tensorflow.cli:main"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"gan_lab_tensorflow.live" = ["static/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-

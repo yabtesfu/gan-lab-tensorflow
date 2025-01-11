@@ -1,87 +1,119 @@
 # GAN Lab TensorFlow
 
-GAN Lab TensorFlow is a learning-focused project for building and analyzing Generative Adversarial Networks. It starts with the classic 2D quadratic distribution from the tutorial notes, then leaves room for image experiments with TensorFlow/Keras models, WGAN-GP losses, checkpoints, and visual diagnostics.
+**A real-time, steerable GAN training observatory — plus the TensorFlow research lab underneath it.**
 
-The goal is not only to train a generator, but to make the adversarial process visible: real samples, generated samples, discriminator feature space, loss curves, and stability metrics.
+Most GAN repositories are static: train a model, dump a grid of images, done. This one is *live*. **GAN Observatory** streams a real GAN training loop to your browser at ~20 fps and lets you **steer it while it runs** — watch the generated distribution chase the target, watch the discriminator's decision boundary and its internal 2D feature space reshape, watch RBF-MMD fall — then drag a hyperparameter into the danger zone, trigger **mode collapse**, and rescue it. No restart.
 
-## Features
+```bash
+pip install -e ".[web]"
+gan-lab serve            # open http://127.0.0.1:8000
+```
 
-- Quadratic, sine, and Gaussian-mixture synthetic datasets
-- TensorFlow/Keras MLP generator and discriminator builders
-- DCGAN-style image generator/discriminator builders
-- Conditional GAN data/model helpers
-- Replay buffer for discriminator stabilization experiments
-- TTUR and warmup learning-rate schedules
-- Adaptive discriminator augmentation helpers
-- Vanilla GAN and Wasserstein loss helpers
-- Gradient-penalty utility for WGAN-GP experiments
-- Training configuration dataclasses
-- Alternating GAN training loop with checkpoint hooks
-- Pure-Python metrics for moment distance, coverage, and RBF-MMD summaries
-- Matplotlib visualization helpers
-- CLI for synthetic-data training and sampling
-- Unit tests for config, data generation, and metrics
-- `push_project.sh` configured for the requested GitHub repo and date window
+![panels](docs/observatory.png)
+
+## 🔭 The Observatory (what makes this a real project)
+
+| Feature | How it works |
+|---|---|
+| **Live training stream** | A background training thread pushes telemetry frames over a WebSocket at 20 fps; a *drop-to-latest* queue means a slow browser never back-pressures training. |
+| **Discriminator X-ray** | The generated cloud sits on the discriminator's live decision-boundary heatmap, with a second panel showing the learned 2D `feature_plane` — a view almost no GAN repo has. |
+| **Live quality metrics** | RBF-MMD, coverage (recall) and precision stream as sparklines, straight from the package's own `evaluation` estimators, with a **mode-collapse alarm**. |
+| **Steer it mid-run** | Learning-rate slider, Vanilla↔Wasserstein swap, TTUR, discriminator-steps, and instance-noise toggles all take effect on the next step — no teardown. |
+| **Deterministic Demo Mode** | One click loads a fixed-seed, deliberately unstable run that reliably collapses to a single mode — the setup for the collapse-and-rescue story. |
+| **Shipped** | Dockerized (CPU-only, no TensorFlow needed), tested, and gated by GitHub Actions running the full pytest suite. |
+
+### The 60-second demo
+
+1. Open the URL, hit **Train** — the three-mode target fills in cleanly under Wasserstein; MMD drops.
+2. Click **Demo Mode**, hit **Train** — the generator **collapses onto a single mode**, coverage craters, and a **MODE COLLAPSE** banner fires.
+3. **Reset → Wasserstein** — all three modes return. (Or try to claw the collapsed net back live with **Instance noise** + a lower learning rate — deep collapse only partially reverses, which is true to real GANs.)
+
+### How it reuses the lab
+
+The observatory is a thin real-time head on the existing package, not a rewrite:
+
+- Target distributions come from [`data.py`](src/gan_lab_tensorflow/data.py) (`sample_curve`, `sample_mixture`).
+- Live metrics come from [`evaluation.py`](src/gan_lab_tensorflow/evaluation.py) (RBF-MMD, nearest-neighbour precision/recall).
+- The live discriminator mirrors [`models.build_mlp_discriminator`](src/gan_lab_tensorflow/models.py): hidden LeakyReLU stack → a linear 2D `feature_plane` → a scalar logit.
+
+The live 2D backend ([`live/engine.py`](src/gan_lab_tensorflow/live/engine.py)) is a dependency-light NumPy GAN with hand-written forward/backprop + Adam, so it runs anywhere at interactive frame rates without a heavyweight install. The TensorFlow models remain the image backend for larger experiments.
+
+### Architecture
+
+```
+browser (Canvas, no build step)
+   │  ▲            WebSocket /ws
+   ▼  │   frames (JSON: points + 32×32 boundary grid + metrics) ─┐
+FastAPI ── send lock ── asyncio sender/receiver                  │ 20 fps
+   │                                                             │
+TrainingSession (daemon thread) ── reads config each step ───────┘
+   └─ LiveGan engine: step() at ~150/s, snapshot() coalesced to latest-frame
+```
 
 ## Install
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e .[dev]
-```
-
-TensorFlow currently supports stable Python versions below Python 3.13. If you are using Python 3.14, create an environment with Python 3.11 or 3.12 for actual model training.
-
-## Quick Start
+Core is lightweight (NumPy only). Everything heavy is an opt-in extra, because
+the models and plots are imported lazily:
 
 ```bash
-gan-lab train --steps 2000 --dataset quadratic --out outputs/quadratic
-gan-lab sample --checkpoint outputs/quadratic --count 256
+pip install -e ".[web]"     # the Observatory (NumPy + FastAPI + Uvicorn)
+pip install -e ".[web,dev]" # + pytest/ruff for development
+pip install -e ".[tf]"      # + TensorFlow for the image/DCGAN models (Python < 3.13)
+pip install -e ".[viz]"     # + matplotlib for the static plotting helpers
 ```
 
-Or run with Python directly:
+TensorFlow supports stable Python versions below 3.13; use a 3.11/3.12 env for
+the `[tf]` models. The Observatory needs none of that.
+
+### Run with Docker
 
 ```bash
-python -m gan_lab_tensorflow.cli train --steps 2000
+docker build -t gan-observatory .
+docker run -p 8000:8000 gan-observatory   # http://127.0.0.1:8000
 ```
+
+## CLI
+
+```bash
+gan-lab serve --port 8000                 # the real-time Observatory
+gan-lab describe-data --dataset mixture   # summarize a synthetic dataset
+gan-lab train --steps 2000 --dataset quadratic --out outputs/quadratic  # offline TF training ([tf] extra)
+```
+
+## The research lab (offline)
+
+The original lab is intact and is the substance the Observatory visualizes:
+
+- Quadratic, sine, and Gaussian-mixture synthetic datasets
+- TensorFlow/Keras MLP and DCGAN generator/discriminator builders
+- Vanilla and Wasserstein (WGAN-GP) losses with a gradient-penalty utility
+- Conditional-GAN helpers, a stabilization replay buffer, TTUR/warmup schedules, adaptive discriminator augmentation
+- Distribution-level metrics (moment distance, coverage, RBF-MMD) and matplotlib diagnostics
+- An alternating training loop with checkpoint hooks
 
 ## Project Layout
 
 ```txt
 src/gan_lab_tensorflow/
-  augment.py      Adaptive discriminator augmentation helpers
-  config.py       Experiment configuration
-  data.py         Synthetic distributions and batching helpers
-  models.py       TensorFlow generator/discriminator builders
-  losses.py       GAN and WGAN-GP loss functions
-  conditional.py  Conditional GAN helpers
-  replay.py       Stabilization replay buffer
-  schedules.py    TTUR/warmup schedules
-  evaluation.py   Distribution-level evaluation metrics
-  trainer.py      Alternating training loop
-  metrics.py      Lightweight sample diagnostics
-  visualize.py    Plotting helpers
-  cli.py          Command-line entry point
-tests/
-  test_config.py
-  test_data.py
-  test_metrics.py
-docs/
-  experiment-plan.md
+  live/                 real-time observatory
+    engine.py           steerable NumPy 2D GAN (manual backprop + Adam)
+    session.py          background training thread + thread-safe controls
+    server.py           FastAPI + WebSocket app
+    static/             Canvas dashboard (index.html, app.js, styles.css)
+  data.py               synthetic distributions and batching
+  models.py             TensorFlow generator/discriminator builders
+  losses.py             GAN and WGAN-GP losses
+  evaluation.py         distribution-level metrics (reused live)
+  conditional.py replay.py schedules.py augment.py trainer.py metrics.py visualize.py cli.py
+tests/                  pytest suite (includes test_live.py)
+Dockerfile  .github/workflows/ci.yml
 ```
 
-## Learning Path
+## Roadmap
 
-1. Generate a visible 2D real distribution.
-2. Train a small generator and discriminator.
-3. Watch generated samples move toward the target distribution.
-4. Track generator/discriminator losses.
-5. Inspect discriminator feature-space separation.
-6. Try stability improvements such as WGAN-GP.
-7. Add conditional labels and compare class-conditioned samples.
-8. Extend the same training loop toward MNIST or small image datasets.
+- **Phase 2** — SQLite run registry (config+seed reproducibility) and a `/generate` serving endpoint; wire the DCGAN builders into a live MNIST "digits emerge from noise" tab.
+- **Phase 3** — an A/B "derby": two synchronized panels (Vanilla vs WGAN-GP) training the same target side by side; a time-travel scrubber over a frame ring buffer.
 
 ## Notes
 
-This is an educational lab, not a production image-generation system. The code is intentionally readable and modular so each GAN concept can be studied independently.
+The live 2D GAN is intentionally small — small enough to *watch* converge, which is exactly why it can be real-time in the browser where image GANs cannot.

@@ -10,4 +10,8 @@ outputs/
 checkpoints/
 history.txt
 .DS_Store
+.claude/
+
+.ruff_cache/
+*.pyc
 

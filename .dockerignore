@@ -1,0 +1,15 @@
+.git
+.venv
+venv
+dist
+build
+*.egg-info
+__pycache__
+**/__pycache__
+outputs
+.pytest_cache
+.ruff_cache
+*.keras
+docs
+tests
+examples

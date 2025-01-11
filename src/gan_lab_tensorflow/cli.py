@@ -23,6 +23,10 @@ def build_parser() -> argparse.ArgumentParser:
     sample.add_argument("--dataset", choices=["quadratic", "sine", "mixture"], default="quadratic")
     sample.add_argument("--count", type=int, default=512)
 
+    serve = sub.add_parser("serve", help="launch the real-time GAN Observatory web app")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
+
     return parser
 
 
@@ -36,6 +40,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             points = sample_mixture(args.count)
         print(summarize(points))
+        return 0
+
+    if args.command == "serve":
+        from .live.server import run
+
+        print(f"GAN Observatory on http://{args.host}:{args.port}")
+        run(host=args.host, port=args.port)
         return 0
 
     training = TrainingConfig(steps=args.steps, batch_size=args.batch_size, loss=args.loss)

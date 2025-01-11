@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAN Observatory</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◑</span>
+      <div>
+        <h1>GAN Observatory</h1>
+        <p class="tagline">Watch a neural net learn a distribution &mdash; and steer it live.</p>
+      </div>
+    </div>
+    <div class="status">
+      <span id="conn" class="pill pill-off">connecting&hellip;</span>
+      <span class="metric-inline">step <strong id="stepCount">0</strong></span>
+      <span class="metric-inline"><strong id="fps">0</strong> fps</span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner hidden">
+    <strong>MODE COLLAPSE</strong>
+    <span>the generator abandoned two of the three modes. Fix it: <em>Reset</em> and switch to <em>Wasserstein</em> &mdash; all three modes return. Or try to claw it back live with <em>Instance noise</em> + a lower <em>learning rate</em>.</span>
+  </div>
+
+  <main class="grid">
+    <section class="panel panel-hero">
+      <div class="panel-head">
+        <h2>Distribution</h2>
+        <span class="legend"><i class="dot dot-real"></i>real <i class="dot dot-fake"></i>generated &middot; heatmap = discriminator decision</span>
+      </div>
+      <canvas id="dist" class="canvas"></canvas>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Discriminator feature plane</h2></div>
+      <canvas id="feature" class="canvas"></canvas>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Losses</h2>
+        <span class="legend"><i class="dot dot-gen"></i>generator <i class="dot dot-disc"></i>discriminator</span>
+      </div>
+      <canvas id="loss" class="canvas canvas-short"></canvas>
+    </section>
+
+    <section class="panel panel-metrics">
+      <div class="metric">
+        <span class="metric-label">RBF-MMD <small>lower = closer</small></span>
+        <span class="metric-value" id="mmdVal">&mdash;</span>
+        <canvas class="spark" id="mmdSpark"></canvas>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Coverage <small>reaches all modes</small></span>
+        <span class="metric-value" id="covVal">&mdash;</span>
+        <canvas class="spark" id="covSpark"></canvas>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Precision <small>looks real</small></span>
+        <span class="metric-value" id="precVal">&mdash;</span>
+        <canvas class="spark" id="precSpark"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer class="cockpit">
+    <div class="coach" id="coach">Press <strong>Train</strong> to begin, or load <strong>Demo Mode</strong> for the collapse-and-rescue story.</div>
+    <div class="controls">
+      <div class="ctl-group primary">
+        <button id="playBtn" class="btn btn-primary">▶ Train</button>
+        <button id="resetBtn" class="btn">↺ Reset</button>
+        <button id="demoBtn" class="btn btn-demo">✦ Demo Mode</button>
+      </div>
+
+      <div class="ctl-group">
+        <label>Target</label>
+        <select id="dataset">
+          <option value="mixture">3-mode mixture</option>
+          <option value="quadratic">quadratic</option>
+          <option value="sine">sine</option>
+        </select>
+      </div>
+
+      <div class="ctl-group">
+        <label>Loss</label>
+        <div class="toggle" id="lossToggle">
+          <button data-loss="vanilla" class="seg">Vanilla</button>
+          <button data-loss="wasserstein" class="seg active">Wasserstein</button>
+        </div>
+      </div>
+
+      <div class="ctl-group">
+        <label>Learning rate <span id="lrVal" class="mono">8.0e-4</span></label>
+        <input id="lr" type="range" min="-5" max="-2" step="0.02" value="-3.097" />
+      </div>
+
+      <div class="ctl-group">
+        <label>D steps / G <span id="dStepsVal" class="mono">1</span></label>
+        <input id="dSteps" type="range" min="1" max="5" step="1" value="1" />
+      </div>
+
+      <div class="ctl-group switches">
+        <label class="switch"><input type="checkbox" id="ttur" /> <span>TTUR</span></label>
+        <label class="switch"><input type="checkbox" id="inoise" /> <span>Instance noise</span></label>
+      </div>
+
+      <div class="ctl-group">
+        <label>Speed</label>
+        <div class="toggle" id="speedToggle">
+          <button data-speed="slow" class="seg">Slow</button>
+          <button data-speed="normal" class="seg">Normal</button>
+          <button data-speed="fast" class="seg active">Fast</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
