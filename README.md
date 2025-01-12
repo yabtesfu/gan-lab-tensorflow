@@ -1,8 +1,8 @@
 # GAN Lab TensorFlow
 
-**A real-time, steerable GAN training observatory — plus the TensorFlow research lab underneath it.**
+**A real-time, steerable GAN training observatory - plus the TensorFlow research lab underneath it.**
 
-Most GAN repositories are static: train a model, dump a grid of images, done. This one is *live*. **GAN Observatory** streams a real GAN training loop to your browser at ~20 fps and lets you **steer it while it runs** — watch the generated distribution chase the target, watch the discriminator's decision boundary and its internal 2D feature space reshape, watch RBF-MMD fall — then drag a hyperparameter into the danger zone, trigger **mode collapse**, and rescue it. No restart.
+Most GAN repositories are static: train a model, dump a grid of images, done. This one is *live*. **GAN Observatory** streams a real GAN training loop to your browser at ~20 fps and lets you **steer it while it runs** - watch the generated distribution chase the target, watch the discriminator's decision boundary and its internal 2D feature space reshape, watch RBF-MMD fall - then drag a hyperparameter into the danger zone, trigger **mode collapse**, and rescue it. No restart.
 
 ```bash
 pip install -e ".[web]"
@@ -16,20 +16,20 @@ gan-lab serve            # open http://127.0.0.1:8000
 | Feature | How it works |
 |---|---|
 | **Live training stream** | A background training thread pushes telemetry frames over a WebSocket at 20 fps; a *drop-to-latest* queue means a slow browser never back-pressures training. |
-| **Discriminator X-ray** | The generated cloud sits on the discriminator's live decision-boundary heatmap, with a second panel showing the learned 2D `feature_plane` — a view almost no GAN repo has. |
+| **Discriminator X-ray** | The generated cloud sits on the discriminator's live decision-boundary heatmap, with a second panel showing the learned 2D `feature_plane` - a view almost no GAN repo has. |
 | **Live quality metrics** | RBF-MMD, coverage (recall) and precision stream as sparklines, straight from the package's own `evaluation` estimators, with a **mode-collapse alarm**. |
-| **Steer it mid-run** | Learning-rate slider, Vanilla↔Wasserstein swap, TTUR, discriminator-steps, and instance-noise toggles all take effect on the next step — no teardown. |
-| **Deterministic Demo Mode** | One click loads a fixed-seed, deliberately unstable run that reliably collapses to a single mode — the setup for the collapse-and-rescue story. |
+| **Steer it mid-run** | Learning-rate slider, Vanilla↔Wasserstein swap, TTUR, discriminator-steps, and instance-noise toggles all take effect on the next step - no teardown. |
+| **Deterministic Demo Mode** | One click loads a fixed-seed, deliberately unstable run that reliably collapses to a single mode - the setup for the collapse-and-rescue story. |
 | **Benchmark distributions** | The 3-mode mixture, the classic **8-Gaussian ring** (a standard mode-coverage stress test), plus quadratic and sine curves. |
-| **Run registry + model serving** | **Save any run** to a SQLite registry (config, seed, metric history, serialized generator), then **serve fresh samples from a saved model** over `GET /api/runs/:id/sample` — reloaded and run, no retraining. |
-| **A/B derby** ([`/derby`](src/gan_lab_tensorflow/live/derby.py)) | Two GANs training on the **same target from the same seed** — identical start, only the loss differs. Watch Vanilla collapse while Wasserstein covers every mode, side by side, plus a **time-travel scrubber** to replay any point in training. |
+| **Run registry + model serving** | **Save any run** to a SQLite registry (config, seed, metric history, serialized generator), then **serve fresh samples from a saved model** over `GET /api/runs/:id/sample` - reloaded and run, no retraining. |
+| **A/B derby** ([`/derby`](src/gan_lab_tensorflow/live/derby.py)) | Two GANs training on the **same target from the same seed** - identical start, only the loss differs. Watch Vanilla collapse while Wasserstein covers every mode, side by side, plus a **time-travel scrubber** to replay any point in training. |
 | **Shipped** | Dockerized (CPU-only, no TensorFlow needed), tested, and gated by GitHub Actions running the full pytest suite. |
 
 ### The 60-second demo
 
-1. Open the URL, hit **Train** — the three-mode target fills in cleanly under Wasserstein; MMD drops.
-2. Click **Demo Mode**, hit **Train** — the generator **collapses onto a single mode**, coverage craters, and a **MODE COLLAPSE** banner fires.
-3. **Reset → Wasserstein** — all three modes return. (Or try to claw the collapsed net back live with **Instance noise** + a lower learning rate — deep collapse only partially reverses, which is true to real GANs.)
+1. Open the URL, hit **Train** - the three-mode target fills in cleanly under Wasserstein; MMD drops.
+2. Click **Demo Mode**, hit **Train** - the generator **collapses onto a single mode**, coverage craters, and a **MODE COLLAPSE** banner fires.
+3. **Reset → Wasserstein** - all three modes return. (Or try to claw the collapsed net back live with **Instance noise** + a lower learning rate - deep collapse only partially reverses, which is true to real GANs.)
 
 ### How it reuses the lab
 
@@ -61,7 +61,7 @@ RunRegistry (SQLite) ◄── save ── session      GET /api/runs         �
 Every run can be **saved** (config, seed, full metric history, and the
 serialized generator weights) to a SQLite registry, which makes it
 reproducible and comparable. A saved generator is then **servable**: the
-`/api/runs/:id/sample` endpoint reloads it and returns fresh samples — pure
+`/api/runs/:id/sample` endpoint reloads it and returns fresh samples - pure
 inference, no discriminator, no retraining. In the UI, the **Model registry**
 panel lists saved runs and draws served samples on click.
 
@@ -120,7 +120,7 @@ src/gan_lab_tensorflow/
     session.py          background training thread + thread-safe controls
     server.py           FastAPI + WebSocket app + /api/runs serving endpoints
     registry.py         SQLite run registry (reproducible, servable runs)
-    derby.py            A/B derby — two synchronized engines racing a target
+    derby.py            A/B derby - two synchronized engines racing a target
     static/             Canvas dashboards (index/derby .html, .js, styles.css)
   data.py               synthetic distributions and batching
   models.py             TensorFlow generator/discriminator builders
@@ -133,11 +133,11 @@ Dockerfile  .github/workflows/ci.yml
 
 ## Roadmap
 
-- **Phase 1 (done)** — live training stream, discriminator X-ray, steering cockpit, deterministic Demo Mode, Docker + CI.
-- **Phase 2 (done)** — SQLite run registry with config+seed reproducibility, a model-serving endpoint (`/api/runs/:id/sample`), and the 8-Gaussian ring benchmark.
-- **Phase 3 (done)** — the A/B derby at [`/derby`](src/gan_lab_tensorflow/live/derby.py): two synchronized engines (Vanilla vs Wasserstein) racing the same target from the same seed, with a client-side time-travel scrubber.
-- **Backlog** — a live MNIST "digits emerge from noise" tab wiring the DCGAN builders in; this one needs the `[tf]` extra and a faster cadence, so it is a TensorFlow-backed addition rather than part of the pure-NumPy real-time core.
+- **Phase 1 (done)** - live training stream, discriminator X-ray, steering cockpit, deterministic Demo Mode, Docker + CI.
+- **Phase 2 (done)** - SQLite run registry with config+seed reproducibility, a model-serving endpoint (`/api/runs/:id/sample`), and the 8-Gaussian ring benchmark.
+- **Phase 3 (done)** - the A/B derby at [`/derby`](src/gan_lab_tensorflow/live/derby.py): two synchronized engines (Vanilla vs Wasserstein) racing the same target from the same seed, with a client-side time-travel scrubber.
+- **Backlog** - a live MNIST "digits emerge from noise" tab wiring the DCGAN builders in; this one needs the `[tf]` extra and a faster cadence, so it is a TensorFlow-backed addition rather than part of the pure-NumPy real-time core.
 
 ## Notes
 
-The live 2D GAN is intentionally small — small enough to *watch* converge, which is exactly why it can be real-time in the browser where image GANs cannot.
+The live 2D GAN is intentionally small - small enough to *watch* converge, which is exactly why it can be real-time in the browser where image GANs cannot.

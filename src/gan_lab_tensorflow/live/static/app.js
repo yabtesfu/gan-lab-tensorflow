@@ -1,4 +1,4 @@
-/* GAN Observatory — live client.
+/* GAN Observatory - live client.
  *
  * Receives telemetry frames over one WebSocket and renders four panels on
  * plain Canvas (no build step, no external libs), and sends steering messages
@@ -304,7 +304,7 @@
     el("resetBtn").onclick = () => { send({ action: "reset" }); setCoach("Reset. Press <strong>Train</strong> to watch it learn from scratch."); };
     el("demoBtn").onclick = () => {
       send({ action: "demo" });
-      setCoach("Demo loaded: a deliberately unstable vanilla GAN. Hit <strong>Train</strong> and watch it <em>collapse</em> onto a single mode. Then <strong>Reset</strong> and switch <strong>Loss → Wasserstein</strong> to see all three modes return — or try to claw it back live with <strong>Instance noise</strong> + a lower learning rate.");
+      setCoach("Demo loaded: a deliberately unstable vanilla GAN. Hit <strong>Train</strong> and watch it <em>collapse</em> onto a single mode. Then <strong>Reset</strong> and switch <strong>Loss → Wasserstein</strong> to see all three modes return - or try to claw it back live with <strong>Instance noise</strong> + a lower learning rate.");
     };
     el("dataset").onchange = (e) => send({ action: "config", value: { dataset: e.target.value } });
     el("ttur").onchange = (e) => send({ action: "config", value: { ttur: e.target.checked } });

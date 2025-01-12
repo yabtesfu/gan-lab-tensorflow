@@ -1,4 +1,4 @@
-<title>GAN Observatory — Live Replay</title>
+<title>GAN Observatory - Live Replay</title>
 <style>
   :root {
     --ground: #0a0e16; --panel: #111726; --panel-2: #0d1220; --line: #212a3e;
@@ -117,7 +117,7 @@
       <div class="mark" aria-hidden="true"></div>
       <div>
         <h1>GAN Observatory</h1>
-        <p class="sub">A generative net learning a distribution &mdash; and the moment it breaks.</p>
+        <p class="sub">A generative net learning a distribution - and the moment it breaks.</p>
       </div>
     </div>
     <div class="headmeta">
@@ -142,17 +142,17 @@
     <aside class="panel rail">
       <div class="gauge">
         <div class="top"><span class="lbl">RBF-MMD</span><span class="hint">lower = closer</span></div>
-        <span class="val" id="mmdv">—</span>
+        <span class="val" id="mmdv">-</span>
         <div class="bar"><span id="mmdbar"></span></div>
       </div>
       <div class="gauge">
         <div class="top"><span class="lbl">Coverage</span><span class="hint">reaches all modes</span></div>
-        <span class="val" id="covv">—</span>
+        <span class="val" id="covv">-</span>
         <div class="bar"><span id="covbar"></span></div>
       </div>
       <div class="gauge">
         <div class="top"><span class="lbl">Precision</span><span class="hint">looks real</span></div>
-        <span class="val" id="precv">—</span>
+        <span class="val" id="precv">-</span>
         <div class="bar"><span id="precbar"></span></div>
       </div>
       <p class="railnote" id="note">Loading real captured frames…</p>
@@ -187,7 +187,7 @@
   </section>
 
   <p class="caption">
-    <b>What you're watching.</b> Every frame is real telemetry captured from an actual GAN training run — no mock-up. In <b>Learn</b>, a Wasserstein GAN pulls the generated cloud (amber) onto all three modes of the target (blue) while the discriminator's decision field settles and MMD falls. In <b>Collapse</b>, a deliberately unstable vanilla configuration abandons two modes and piles every sample onto one — the classic failure the alarm is watching for. The live version streams this over a WebSocket and lets you steer training mid-run: <code>gan-lab serve</code>.
+    <b>What you're watching.</b> Every frame is real telemetry captured from an actual GAN training run - no mock-up. In <b>Learn</b>, a Wasserstein GAN pulls the generated cloud (amber) onto all three modes of the target (blue) while the discriminator's decision field settles and MMD falls. In <b>Collapse</b>, a deliberately unstable vanilla configuration abandons two modes and piles every sample onto one - the classic failure the alarm is watching for. The live version streams this over a WebSocket and lets you steer training mid-run: <code>gan-lab serve</code>.
   </p>
 </div>
 
@@ -286,7 +286,7 @@ const DATA = {"learn":{"real":[[4.69,-0.42],[-3.85,-0.61],[3.96,-1.69],[3.88,-0.
 
   const NOTES = {
     learn: "Wasserstein keeps the discriminator honest, so gradients stay useful and the generator can spread across every mode. Watch coverage climb toward 100% and MMD fall.",
-    collapse: "A deliberately unstable vanilla setup: an over-eager discriminator and a high learning rate. The generator finds one mode that fools it and abandons the rest. Deep collapse barely reverses — which is exactly why WGAN exists."
+    collapse: "A deliberately unstable vanilla setup: an over-eager discriminator and a high learning rate. The generator finds one mode that fools it and abandons the rest. Deep collapse barely reverses - which is exactly why WGAN exists."
   };
 
   /* ---- render a frame ---- */

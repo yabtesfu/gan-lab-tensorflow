@@ -12,7 +12,7 @@
       <span class="logo">◑</span>
       <div>
         <h1>GAN Observatory</h1>
-        <p class="tagline">Watch a neural net learn a distribution &mdash; and steer it live.</p>
+        <p class="tagline">Watch a neural net learn a distribution - and steer it live.</p>
       </div>
     </div>
     <div class="status">
@@ -25,7 +25,7 @@
 
   <div id="banner" class="banner hidden">
     <strong>MODE COLLAPSE</strong>
-    <span>the generator abandoned two of the three modes. Fix it: <em>Reset</em> and switch to <em>Wasserstein</em> &mdash; all three modes return. Or try to claw it back live with <em>Instance noise</em> + a lower <em>learning rate</em>.</span>
+    <span>the generator abandoned two of the three modes. Fix it: <em>Reset</em> and switch to <em>Wasserstein</em> - all three modes return. Or try to claw it back live with <em>Instance noise</em> + a lower <em>learning rate</em>.</span>
   </div>
 
   <main class="grid">
@@ -52,17 +52,17 @@
     <section class="panel panel-metrics">
       <div class="metric">
         <span class="metric-label">RBF-MMD <small>lower = closer</small></span>
-        <span class="metric-value" id="mmdVal">&mdash;</span>
+        <span class="metric-value" id="mmdVal">-</span>
         <canvas class="spark" id="mmdSpark"></canvas>
       </div>
       <div class="metric">
         <span class="metric-label">Coverage <small>reaches all modes</small></span>
-        <span class="metric-value" id="covVal">&mdash;</span>
+        <span class="metric-value" id="covVal">-</span>
         <canvas class="spark" id="covSpark"></canvas>
       </div>
       <div class="metric">
         <span class="metric-label">Precision <small>looks real</small></span>
-        <span class="metric-value" id="precVal">&mdash;</span>
+        <span class="metric-value" id="precVal">-</span>
         <canvas class="spark" id="precSpark"></canvas>
       </div>
     </section>
@@ -126,13 +126,13 @@
     <div class="reg-head">
       <div>
         <h2>Model registry</h2>
-        <p class="reg-sub">Every saved run is persisted to SQLite (config, seed, metrics). Click one to <b>serve fresh samples from that generator</b> through the <code>/api/runs/:id/sample</code> endpoint &mdash; the model reloaded and run, no retraining.</p>
+        <p class="reg-sub">Every saved run is persisted to SQLite (config, seed, metrics). Click one to <b>serve fresh samples from that generator</b> through the <code>/api/runs/:id/sample</code> endpoint - the model reloaded and run, no retraining.</p>
       </div>
     </div>
     <div class="reg-body">
       <div id="runlist" class="runlist"><p class="empty">No saved runs yet. Train a model, then hit <b>Save run</b>.</p></div>
       <div class="preview">
-        <div class="preview-cap"><span class="lbl">Served output</span><span id="prevMeta" class="prev-meta">—</span></div>
+        <div class="preview-cap"><span class="lbl">Served output</span><span id="prevMeta" class="prev-meta">-</span></div>
         <canvas id="preview"></canvas>
       </div>
     </div>

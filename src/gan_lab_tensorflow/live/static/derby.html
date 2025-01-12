@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GAN Observatory — A/B Derby</title>
+  <title>GAN Observatory - A/B Derby</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
       <span class="logo">⚔</span>
       <div>
         <h1>A/B Derby</h1>
-        <p class="tagline">Two GANs, one target, one seed &mdash; only the loss differs.</p>
+        <p class="tagline">Two GANs, one target, one seed - only the loss differs.</p>
       </div>
     </div>
     <div class="status">
@@ -24,21 +24,21 @@
   </header>
 
   <div class="derby-note">
-    Both models start <strong>identical</strong> (same real data, same random init). The only difference is the training objective &mdash; so whatever happens next is caused by the loss alone.
+    Both models start <strong>identical</strong> (same real data, same random init). The only difference is the training objective - so whatever happens next is caused by the loss alone.
   </div>
 
   <main class="derby-grid">
     <section class="panel viewport derby-panel" id="leftPanel">
       <div class="panel-head">
         <h2>Vanilla GAN <span class="tiny">non-saturating BCE</span></h2>
-        <span class="dcov" id="lcov">—</span>
+        <span class="dcov" id="lcov">-</span>
       </div>
       <canvas id="leftView" class="canvas"></canvas>
     </section>
     <section class="panel viewport derby-panel" id="rightPanel">
       <div class="panel-head">
         <h2>Wasserstein <span class="tiny">weight-clipped WGAN</span></h2>
-        <span class="dcov" id="rcov">—</span>
+        <span class="dcov" id="rcov">-</span>
       </div>
       <canvas id="rightView" class="canvas"></canvas>
     </section>
@@ -47,7 +47,7 @@
   <section class="panel compare">
     <div class="panel-head">
       <h2>Coverage over training</h2>
-      <span id="verdict" class="verdict">—</span>
+      <span id="verdict" class="verdict">-</span>
     </div>
     <canvas id="compare" class="canvas canvas-short"></canvas>
   </section>

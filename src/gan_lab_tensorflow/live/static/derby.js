@@ -1,4 +1,4 @@
-/* A/B Derby — two synchronized GANs streamed as paired frames.
+/* A/B Derby - two synchronized GANs streamed as paired frames.
  *
  * Renders a left/right viewport plus a coverage-vs-coverage comparison chart,
  * and keeps a client-side ring buffer of frames so you can scrub back through
