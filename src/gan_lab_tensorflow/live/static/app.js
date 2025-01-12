@@ -201,6 +201,8 @@
       const msg = JSON.parse(ev.data);
       if (msg.type === "frame") { state.frames++; render(msg); }
       else if (msg.type === "state") syncState(msg);
+      else if (msg.type === "runs") renderRuns(msg.runs);
+      else if (msg.type === "saved") onSaved(msg.id);
       else if (msg.type === "error") setCoach(msg.message);
     };
   }
@@ -240,8 +242,64 @@
   }
   function fmtLr(v) { return v.toExponential(1).replace("e", "e"); }
 
+  /* ---------------- model registry ---------------- */
+  const DS_NAMES = { mixture: "3-mode mixture", ring: "8-Gaussian ring", quadratic: "quadratic", sine: "sine" };
+  let activeRun = null;
+  let lastRuns = [];
+
+  function renderRuns(runs) {
+    if (runs) lastRuns = runs;
+    const box = el("runlist");
+    if (!lastRuns.length) { box.innerHTML = '<p class="empty">No saved runs yet. Train a model, then hit <b>Save run</b>.</p>'; return; }
+    box.innerHTML = "";
+    lastRuns.forEach((r) => {
+      const card = document.createElement("button");
+      card.className = "runcard" + (r.id === activeRun ? " active" : "");
+      const tag = r.collapsed ? '<span class="rc-tag badge-bad">collapsed</span>'
+        : '<span class="rc-tag badge-ok">cov ' + Math.round(r.coverage * 100) + "%</span>";
+      card.innerHTML =
+        '<div class="rc-top"><span class="rc-id">#' + r.id + "</span>" + tag + "</div>" +
+        '<span class="rc-name">' + (DS_NAMES[r.dataset] || r.dataset) + " &middot; " + r.loss + "</span>" +
+        '<div class="rc-metrics"><span>MMD <b>' + r.mmd.toFixed(2) + "</b></span><span>step <b>" + r.step + "</b></span></div>";
+      card.addEventListener("click", () => sampleRun(r));
+      box.appendChild(card);
+    });
+  }
+
+  async function sampleRun(r) {
+    activeRun = r.id;
+    renderRuns();
+    try {
+      const res = await fetch("/api/runs/" + r.id + "/sample?count=260");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      drawPreview(data.points, data.extent);
+      el("prevMeta").textContent = "run #" + r.id + " · " + data.points.length + " pts · GET /api/runs/" + r.id + "/sample";
+    } catch (e) {
+      el("prevMeta").textContent = "sample failed: " + e.message;
+    }
+  }
+
+  function drawPreview(pts, extent) {
+    const { ctx, w, h } = fitCanvas(el("preview"));
+    ctx.clearRect(0, 0, w, h);
+    const m = mapper(extent, w, h, 12);
+    ctx.globalAlpha = 0.85; ctx.fillStyle = COL.fake;
+    for (let i = 0; i < pts.length; i++) { ctx.beginPath(); ctx.arc(m.x(pts[i][0]), m.y(pts[i][1]), 2.6, 0, 6.2832); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  }
+
+  function onSaved(id) {
+    setCoach("Saved run <strong>#" + id + "</strong> to the registry. Click its card below to serve fresh samples from that generator through the API.");
+  }
+  async function loadRuns() {
+    try { const res = await fetch("/api/runs"); const data = await res.json(); renderRuns(data.runs); }
+    catch (e) { /* registry unavailable */ }
+  }
+
   /* ---------------- control bindings ---------------- */
   function bind() {
+    el("saveBtn").onclick = () => send({ action: "save" });
     el("playBtn").onclick = () => send({ action: "toggle" });
     el("resetBtn").onclick = () => { send({ action: "reset" }); setCoach("Reset. Press <strong>Train</strong> to watch it learn from scratch."); };
     el("demoBtn").onclick = () => {
@@ -271,5 +329,6 @@
   setInterval(() => { state.fps = state.frames; state.frames = 0; el("fps").textContent = state.fps; }, 1000);
 
   bind();
+  loadRuns();
   connect();
 })();

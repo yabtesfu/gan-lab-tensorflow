@@ -74,12 +74,14 @@
         <button id="playBtn" class="btn btn-primary">▶ Train</button>
         <button id="resetBtn" class="btn">↺ Reset</button>
         <button id="demoBtn" class="btn btn-demo">✦ Demo Mode</button>
+        <button id="saveBtn" class="btn btn-save">⤓ Save run</button>
       </div>
 
       <div class="ctl-group">
         <label>Target</label>
         <select id="dataset">
           <option value="mixture">3-mode mixture</option>
+          <option value="ring">8-Gaussian ring</option>
           <option value="quadratic">quadratic</option>
           <option value="sine">sine</option>
         </select>
@@ -118,6 +120,22 @@
       </div>
     </div>
   </footer>
+
+  <section class="panel registry">
+    <div class="reg-head">
+      <div>
+        <h2>Model registry</h2>
+        <p class="reg-sub">Every saved run is persisted to SQLite (config, seed, metrics). Click one to <b>serve fresh samples from that generator</b> through the <code>/api/runs/:id/sample</code> endpoint &mdash; the model reloaded and run, no retraining.</p>
+      </div>
+    </div>
+    <div class="reg-body">
+      <div id="runlist" class="runlist"><p class="empty">No saved runs yet. Train a model, then hit <b>Save run</b>.</p></div>
+      <div class="preview">
+        <div class="preview-cap"><span class="lbl">Served output</span><span id="prevMeta" class="prev-meta">—</span></div>
+        <canvas id="preview"></canvas>
+      </div>
+    </div>
+  </section>
 
   <script src="/static/app.js"></script>
 </body>

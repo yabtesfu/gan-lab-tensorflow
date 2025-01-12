@@ -9,7 +9,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from gan_lab_tensorflow.live.engine import LiveGan, LiveGanConfig
+from gan_lab_tensorflow.live.engine import LiveGan, LiveGanConfig, sample_generator
+from gan_lab_tensorflow.live.registry import RunRegistry
 from gan_lab_tensorflow.live.session import DEMO_COLLAPSE, TrainingSession
 
 
@@ -37,6 +38,22 @@ def test_wasserstein_covers_the_mixture():
     gan = _train(LiveGanConfig(dataset="mixture", loss="wasserstein", seed=42), 1200)
     frame = gan.snapshot()
     assert frame.coverage > 0.85
+
+
+def test_ring_benchmark_trains():
+    """The 8-Gaussian ring is harder but should still gain real coverage."""
+    gan = _train(LiveGanConfig(dataset="ring", loss="wasserstein", seed=42), 2000)
+    assert gan.snapshot().coverage > 0.6
+
+
+def test_export_and_sample_roundtrip():
+    """A generator can be serialized and sampled from without the trainer."""
+    gan = _train(LiveGanConfig(dataset="mixture", loss="wasserstein", seed=5), 300)
+    state = gan.export_state()
+    served = sample_generator(state, 128, seed=7)
+    assert len(served["points"]) == 128
+    assert all(len(p) == 2 for p in served["points"])
+    assert served["dataset"] == "mixture"
 
 
 # -- determinism ------------------------------------------------------------
@@ -127,3 +144,16 @@ def test_session_load_demo():
     assert cfg["dataset"] == "mixture"
     assert cfg["loss"] == "vanilla"
     assert session.latest_frame is not None
+
+
+def test_session_save_run_persists(tmp_path):
+    reg = RunRegistry(tmp_path / "runs.db")
+    session = TrainingSession(LiveGanConfig(dataset="ring", seed=2), registry=reg)
+    rid = session.save_run()
+    assert rid is not None
+    runs = reg.list()
+    assert len(runs) == 1 and runs[0]["dataset"] == "ring"
+
+
+def test_session_save_run_without_registry():
+    assert TrainingSession().save_run() is None

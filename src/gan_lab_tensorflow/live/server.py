@@ -13,18 +13,25 @@ cannot be driven into the ground by concurrent visitors.
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .engine import sample_generator
+from .registry import RunRegistry
 from .session import _EMIT_PERIOD, TrainingSession
 
 _STATIC = Path(__file__).parent / "static"
 
 app = FastAPI(title="GAN Observatory")
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
+
+# One registry of reproducible runs for the whole process.
+registry = RunRegistry(os.environ.get("RUNS_DB", "runs.db"))
 
 # Single-session guard: one live training run at a time.
 _session_busy = asyncio.Lock()
@@ -40,6 +47,40 @@ async def healthz() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/api/runs")
+async def api_runs() -> dict:
+    """List saved runs (newest first) for the run registry panel."""
+    return {"runs": registry.list()}
+
+
+@app.get("/api/runs/{run_id}")
+async def api_run(run_id: int) -> dict:
+    """A single run including its streamed metric history."""
+    run = registry.get(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    return run
+
+
+@app.get("/api/runs/{run_id}/sample")
+async def api_sample(run_id: int, count: int = 240, seed: Optional[int] = None) -> dict:
+    """Serve fresh samples from a saved generator -- the model-serving endpoint.
+
+    Pure inference: reloads the run's generator and draws ``count`` new points.
+    """
+    run = registry.get(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    result = sample_generator(run["state"], count, seed=seed)
+    result["runId"] = run_id
+    return result
+
+
+@app.delete("/api/runs/{run_id}")
+async def api_delete(run_id: int) -> dict:
+    return {"deleted": registry.delete(run_id)}
+
+
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket) -> None:
     await ws.accept()
@@ -49,7 +90,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
         return
 
     async with _session_busy:
-        session = TrainingSession()
+        session = TrainingSession(registry=registry)
         session.start()
         send_lock = asyncio.Lock()
 
@@ -92,6 +133,12 @@ async def _receiver(ws: WebSocket, safe_send, session: TrainingSession) -> None:
     """Apply steering messages and echo state back so the UI stays in sync."""
     while True:
         message = await ws.receive_json()
+        if message.get("action") == "save":
+            # Persist the current run, then hand back the refreshed run list.
+            run_id = await asyncio.to_thread(session.save_run)
+            await safe_send({"type": "saved", "id": run_id})
+            await safe_send({"type": "runs", "runs": registry.list()})
+            continue
         session.apply_control(message)
         await safe_send(session.state())
         # Structural steering (dataset/width/demo/reset) refreshes the frame

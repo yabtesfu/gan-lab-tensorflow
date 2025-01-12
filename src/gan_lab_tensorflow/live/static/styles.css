@@ -139,7 +139,37 @@ select {
 .seg { background: transparent; color: var(--muted); border: none; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .seg.active { background: rgba(160, 107, 255, 0.22); color: #fff; }
 
+.btn-save { background: linear-gradient(180deg, #1f6f52, #17553f); border-color: #17553f; color: #eafff5; }
+
 input[type=range] { width: 150px; accent-color: var(--accent); }
+
+/* ---- model registry ---- */
+.registry { padding: 14px 16px; }
+.reg-head h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.reg-sub { margin: 5px 0 12px; font-size: 12.5px; line-height: 1.5; color: var(--muted); max-width: 78ch; }
+.reg-sub b { color: var(--text); font-weight: 600; }
+.reg-sub code { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; color: #cfe0ff; background: #0d1526; border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; }
+.reg-body { display: grid; grid-template-columns: 1fr 220px; gap: 14px; align-items: stretch; }
+.runlist { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; min-height: 96px; }
+.runlist .empty { color: var(--muted); font-size: 13px; margin: 8px 2px; }
+.runlist .empty b { color: var(--text); }
+.runcard { text-align: left; cursor: pointer; background: #0e1626; border: 1px solid var(--line); border-radius: 11px;
+  padding: 10px 12px; min-width: 148px; display: flex; flex-direction: column; gap: 6px; transition: .13s; color: var(--text); }
+.runcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+.runcard.active { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 22%, transparent); }
+.runcard .rc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.runcard .rc-id { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); }
+.runcard .rc-tag { font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+.runcard .rc-metrics { display: flex; gap: 12px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px; font-variant-numeric: tabular-nums; }
+.runcard .rc-metrics b { font-weight: 600; }
+.runcard .rc-name { font-size: 12px; color: var(--text); font-weight: 600; }
+.badge-ok { background: color-mix(in oklab, var(--good) 20%, transparent); color: var(--good); }
+.badge-bad { background: color-mix(in oklab, var(--bad) 20%, transparent); color: var(--bad); }
+.preview { display: flex; flex-direction: column; gap: 6px; border-left: 1px solid var(--line); padding-left: 14px; }
+.preview-cap { display: flex; justify-content: space-between; align-items: baseline; }
+.prev-meta { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11px; color: var(--muted); }
+#preview { width: 100%; flex: 1; min-height: 150px; border-radius: 10px; background: #070a12; display: block; }
+@media (max-width: 720px) { .reg-body { grid-template-columns: 1fr; } .preview { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; } }
 .switch { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text); cursor: pointer; }
 .switch input { accent-color: var(--accent); width: 16px; height: 16px; }
 

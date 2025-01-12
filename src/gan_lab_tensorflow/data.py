@@ -44,6 +44,29 @@ def sample_mixture(count: int, *, seed: int | None = None) -> list[Point]:
     return samples
 
 
+def sample_ring(
+    count: int, *, modes: int = 8, radius: float = 6.0, std: float = 0.35, seed: int | None = None
+) -> list[Point]:
+    """The classic ``modes``-Gaussian ring benchmark.
+
+    Gaussians spaced evenly on a circle. GANs famously mode-collapse here --
+    dropping to one or a few of the ring's blobs -- which makes it the standard
+    stress test for mode coverage.
+    """
+    if modes <= 0:
+        raise ValueError("modes must be positive")
+    centers = [
+        (radius * math.cos(2 * math.pi * k / modes), radius * math.sin(2 * math.pi * k / modes))
+        for k in range(modes)
+    ]
+    rng = random.Random(seed)
+    samples: list[Point] = []
+    for _ in range(count):
+        cx, cy = centers[rng.randrange(modes)]
+        samples.append((rng.gauss(cx, std), rng.gauss(cy, std)))
+    return samples
+
+
 def sample_noise(count: int, dim: int, *, seed: int | None = None) -> list[tuple[float, ...]]:
     rng = random.Random(seed)
     return [tuple(rng.uniform(-1.0, 1.0) for _ in range(dim)) for _ in range(count)]

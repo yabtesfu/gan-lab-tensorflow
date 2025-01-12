@@ -9,6 +9,8 @@ dist/
 outputs/
 checkpoints/
 history.txt
+runs.db
+*.db
 .DS_Store
 .claude/
 

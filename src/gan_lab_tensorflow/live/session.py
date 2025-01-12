@@ -43,14 +43,20 @@ DEMO_COLLAPSE = LiveGanConfig(
 )
 
 
+_HISTORY_CAP = 800
+
+
 class TrainingSession:
-    def __init__(self, config: LiveGanConfig | None = None):
+    def __init__(self, config: LiveGanConfig | None = None, registry=None):
         self._lock = threading.Lock()
         self._engine = LiveGan(config)
+        self._registry = registry
         self._running = False
         self._speed = "fast"
         self._stop = threading.Event()
         self.latest_frame: TelemetryFrame | None = None
+        self._history: list[dict] = []
+        self._last_hist_step = -1
         self._thread: threading.Thread | None = None
 
     # -- lifecycle -----------------------------------------------------------
@@ -85,7 +91,24 @@ class TrainingSession:
     def reset(self) -> None:
         with self._lock:
             self._engine.reset()
+            self._history.clear()
+            self._last_hist_step = -1
             self.latest_frame = self._engine.snapshot()
+
+    def save_run(self) -> int | None:
+        """Persist the current generator + metrics to the registry; return id."""
+        if self._registry is None:
+            return None
+        with self._lock:
+            cfg = self._engine.config
+            frame = (self.latest_frame or self._engine.snapshot()).to_dict()
+            state = self._engine.export_state()
+            history = list(self._history)
+            dataset, loss, seed = cfg.dataset, cfg.loss, cfg.seed
+        # Write outside the lock: SQLite I/O should not stall the training thread.
+        return self._registry.save(
+            dataset=dataset, loss=loss, seed=seed, frame=frame, metrics_history=history, state=state
+        )
 
     def set_speed(self, speed: str) -> None:
         if speed in _SPEED_STEPS_PER_SEC:
@@ -97,6 +120,8 @@ class TrainingSession:
         with self._lock:
             self._engine.apply_config(replace(DEMO_COLLAPSE))
             self._running = False
+            self._history.clear()
+            self._last_hist_step = -1
             self.latest_frame = self._engine.snapshot()
 
     def apply_control(self, message: dict) -> None:
@@ -134,6 +159,8 @@ class TrainingSession:
             )
             rebuilt = self._engine.apply_config(merged)
             if rebuilt:
+                self._history.clear()
+                self._last_hist_step = -1
                 self.latest_frame = self._engine.snapshot()
 
     def state(self) -> dict:
@@ -170,7 +197,17 @@ class TrainingSession:
             now = time.monotonic()
             if now - last_emit >= _EMIT_PERIOD:
                 with self._lock:
-                    self.latest_frame = self._engine.snapshot()
+                    frame = self._engine.snapshot()
+                    self.latest_frame = frame
+                    if frame.step != self._last_hist_step:
+                        self._last_hist_step = frame.step
+                        self._history.append({
+                            "s": frame.step, "mmd": round(frame.mmd, 4),
+                            "cov": round(frame.coverage, 4), "gen": round(frame.gen_loss, 3),
+                            "disc": round(frame.disc_loss, 3),
+                        })
+                        if len(self._history) > _HISTORY_CAP:
+                            del self._history[0]
                 last_emit = now
 
             if running:

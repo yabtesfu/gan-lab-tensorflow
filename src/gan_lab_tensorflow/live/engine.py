@@ -31,11 +31,12 @@ from typing import Literal
 
 import numpy as np
 
-from ..data import Point, sample_curve, sample_mixture, sine_y
+from ..data import Point, sample_curve, sample_mixture, sample_ring, sine_y
 from ..evaluation import maximum_mean_discrepancy, nearest_neighbor_precision
 
-Dataset = Literal["quadratic", "sine", "mixture"]
+Dataset = Literal["quadratic", "sine", "mixture", "ring"]
 LossKind = Literal["vanilla", "wasserstein"]
+DATASETS = ("quadratic", "sine", "mixture", "ring")
 
 _LEAKY_ALPHA = 0.2
 _WEIGHT_CLIP = 0.04  # Lipschitz clip for the weight-clipped WGAN path
@@ -49,6 +50,8 @@ def _sample_real(dataset: Dataset, count: int, *, seed: int | None) -> list[Poin
         return sample_curve(count, fn=sine_y, noise=0.15, seed=seed)
     if dataset == "mixture":
         return sample_mixture(count, seed=seed)
+    if dataset == "ring":
+        return sample_ring(count, seed=seed)
     raise ValueError(f"unknown dataset {dataset!r}")
 
 
@@ -86,6 +89,15 @@ class _MLP:
         self._mb = [np.zeros_like(b) for b in self.biases]
         self._vb = [np.zeros_like(b) for b in self.biases]
         self._t = 0
+
+    @classmethod
+    def from_state(cls, spec, weights, biases) -> "_MLP":
+        """Rebuild an inference-only net from saved arrays (no optimizer state)."""
+        obj = cls.__new__(cls)
+        obj.spec = [tuple(s) for s in spec]
+        obj.weights = [np.asarray(w, dtype=np.float64) for w in weights]
+        obj.biases = [np.asarray(b, dtype=np.float64) for b in biases]
+        return obj
 
     def forward(self, x: np.ndarray) -> tuple[np.ndarray, list[tuple[np.ndarray, np.ndarray]]]:
         cache: list[tuple[np.ndarray, np.ndarray]] = []
@@ -162,8 +174,8 @@ class LiveGanConfig:
         self.d_steps = int(np.clip(self.d_steps, 1, 5))
         if self.loss not in ("vanilla", "wasserstein"):
             raise ValueError("loss must be 'vanilla' or 'wasserstein'")
-        if self.dataset not in ("quadratic", "sine", "mixture"):
-            raise ValueError("dataset must be quadratic, sine, or mixture")
+        if self.dataset not in DATASETS:
+            raise ValueError("dataset must be one of: " + ", ".join(DATASETS))
         return self
 
 
@@ -303,6 +315,26 @@ class LiveGan:
         self._collapse_streak = 0
         self._build()
 
+    # -- serialization -------------------------------------------------------
+    def export_state(self) -> dict:
+        """A self-contained snapshot of the *generator* for serving.
+
+        Captures the generator weights plus the normaliser and display extent,
+        so a saved run can be reloaded and sampled from without retraining.
+        """
+        return {
+            "noise_dim": int(self.config.noise_dim),
+            "spec": [[int(u), a] for (u, a) in self._gen.spec],
+            "weights": [w.tolist() for w in self._gen.weights],
+            "biases": [b.tolist() for b in self._gen.biases],
+            "mean": self._mean.tolist(),
+            "std": self._std.tolist(),
+            "extent": [float(v) for v in self._extent],
+            "dataset": self.config.dataset,
+            "loss": self.config.loss,
+            "seed": int(self.config.seed),
+        }
+
     # -- training ------------------------------------------------------------
     def _noise(self, n: int) -> np.ndarray:
         return self._rng.uniform(-1.0, 1.0, size=(n, self.config.noise_dim))
@@ -438,14 +470,35 @@ class LiveGan:
         return gen, disc
 
     def _update_collapse(self, coverage: float, fake_norm: np.ndarray) -> bool:
-        # Mode collapse shows up two ways at once: the generator stops covering
-        # the real distribution (low recall) AND its own samples lose spread.
-        # (Thresholds calibrated empirically: healthy runs reach ~0.99 coverage
-        # with spread ~2.6; a single-mode collapse sits near 0.33 / 0.5.)
-        spread = float(np.mean(np.std(fake_norm, axis=0)))
-        bad = coverage < 0.45 and spread < 1.3
+        # Coverage (recall) is the scale-free mode-collapse signal: the fraction
+        # of the real distribution the generator still reaches. Healthy runs sit
+        # at 0.7-0.99; abandoning modes drops it well below 0.4 on both the
+        # compact mixture and the wide 8-Gaussian ring. Require a short streak so
+        # transient early-training dips do not trip the alarm.
+        bad = coverage < 0.4
         self._collapse_streak = self._collapse_streak + 1 if bad else 0
         return self._collapse_streak >= 4
+
+
+def sample_generator(state: dict, count: int, *, seed: int | None = None) -> dict:
+    """Generate fresh samples from a saved generator state (see export_state).
+
+    This is what backs the ``/generate`` serving endpoint: load a run, draw
+    ``count`` samples in data coordinates. Pure inference -- no discriminator,
+    no optimizer, no training.
+    """
+    count = int(max(1, min(count, 5000)))
+    rng = np.random.default_rng(seed)
+    z = rng.uniform(-1.0, 1.0, size=(count, int(state["noise_dim"])))
+    gen = _MLP.from_state(state["spec"], state["weights"], state["biases"])
+    out, _ = gen.forward(z)
+    disp = out * np.asarray(state["std"]) + np.asarray(state["mean"])
+    return {
+        "points": _round_points(disp),
+        "extent": [float(v) for v in state["extent"]],
+        "dataset": state.get("dataset"),
+        "loss": state.get("loss"),
+    }
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:

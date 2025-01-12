@@ -20,6 +20,8 @@ gan-lab serve            # open http://127.0.0.1:8000
 | **Live quality metrics** | RBF-MMD, coverage (recall) and precision stream as sparklines, straight from the package's own `evaluation` estimators, with a **mode-collapse alarm**. |
 | **Steer it mid-run** | Learning-rate slider, Vanilla↔Wasserstein swap, TTUR, discriminator-steps, and instance-noise toggles all take effect on the next step — no teardown. |
 | **Deterministic Demo Mode** | One click loads a fixed-seed, deliberately unstable run that reliably collapses to a single mode — the setup for the collapse-and-rescue story. |
+| **Benchmark distributions** | The 3-mode mixture, the classic **8-Gaussian ring** (a standard mode-coverage stress test), plus quadratic and sine curves. |
+| **Run registry + model serving** | **Save any run** to a SQLite registry (config, seed, metric history, serialized generator), then **serve fresh samples from a saved model** over `GET /api/runs/:id/sample` — reloaded and run, no retraining. |
 | **Shipped** | Dockerized (CPU-only, no TensorFlow needed), tested, and gated by GitHub Actions running the full pytest suite. |
 
 ### The 60-second demo
@@ -48,6 +50,23 @@ FastAPI ── send lock ── asyncio sender/receiver                  │ 20 
    │                                                             │
 TrainingSession (daemon thread) ── reads config each step ───────┘
    └─ LiveGan engine: step() at ~150/s, snapshot() coalesced to latest-frame
+
+RunRegistry (SQLite) ◄── save ── session      GET /api/runs         → list
+   └─ config · seed · metric history · generator weights   /api/runs/:id/sample → serve
+```
+
+## Model registry & serving
+
+Every run can be **saved** (config, seed, full metric history, and the
+serialized generator weights) to a SQLite registry, which makes it
+reproducible and comparable. A saved generator is then **servable**: the
+`/api/runs/:id/sample` endpoint reloads it and returns fresh samples — pure
+inference, no discriminator, no retraining. In the UI, the **Model registry**
+panel lists saved runs and draws served samples on click.
+
+```bash
+curl localhost:8000/api/runs                 # list saved runs (newest first)
+curl "localhost:8000/api/runs/1/sample?count=500"   # serve 500 fresh points from run #1
 ```
 
 ## Install
@@ -96,9 +115,10 @@ The original lab is intact and is the substance the Observatory visualizes:
 ```txt
 src/gan_lab_tensorflow/
   live/                 real-time observatory
-    engine.py           steerable NumPy 2D GAN (manual backprop + Adam)
+    engine.py           steerable NumPy 2D GAN (manual backprop + Adam) + serving
     session.py          background training thread + thread-safe controls
-    server.py           FastAPI + WebSocket app
+    server.py           FastAPI + WebSocket app + /api/runs serving endpoints
+    registry.py         SQLite run registry (reproducible, servable runs)
     static/             Canvas dashboard (index.html, app.js, styles.css)
   data.py               synthetic distributions and batching
   models.py             TensorFlow generator/discriminator builders
@@ -111,7 +131,9 @@ Dockerfile  .github/workflows/ci.yml
 
 ## Roadmap
 
-- **Phase 2** — SQLite run registry (config+seed reproducibility) and a `/generate` serving endpoint; wire the DCGAN builders into a live MNIST "digits emerge from noise" tab.
+- **Phase 1 (done)** — live training stream, discriminator X-ray, steering cockpit, deterministic Demo Mode, Docker + CI.
+- **Phase 2 (done)** — SQLite run registry with config+seed reproducibility, a model-serving endpoint (`/api/runs/:id/sample`), and the 8-Gaussian ring benchmark.
+- **Phase 2 (remaining)** — a live MNIST "digits emerge from noise" tab wiring the DCGAN builders in; this one needs the `[tf]` extra and a GPU/faster cadence, so it is a TensorFlow-backed addition rather than part of the pure-NumPy real-time core.
 - **Phase 3** — an A/B "derby": two synchronized panels (Vanilla vs WGAN-GP) training the same target side by side; a time-travel scrubber over a frame ring buffer.
 
 ## Notes
