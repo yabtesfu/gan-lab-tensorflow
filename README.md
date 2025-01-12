@@ -22,6 +22,7 @@ gan-lab serve            # open http://127.0.0.1:8000
 | **Deterministic Demo Mode** | One click loads a fixed-seed, deliberately unstable run that reliably collapses to a single mode — the setup for the collapse-and-rescue story. |
 | **Benchmark distributions** | The 3-mode mixture, the classic **8-Gaussian ring** (a standard mode-coverage stress test), plus quadratic and sine curves. |
 | **Run registry + model serving** | **Save any run** to a SQLite registry (config, seed, metric history, serialized generator), then **serve fresh samples from a saved model** over `GET /api/runs/:id/sample` — reloaded and run, no retraining. |
+| **A/B derby** ([`/derby`](src/gan_lab_tensorflow/live/derby.py)) | Two GANs training on the **same target from the same seed** — identical start, only the loss differs. Watch Vanilla collapse while Wasserstein covers every mode, side by side, plus a **time-travel scrubber** to replay any point in training. |
 | **Shipped** | Dockerized (CPU-only, no TensorFlow needed), tested, and gated by GitHub Actions running the full pytest suite. |
 
 ### The 60-second demo
@@ -119,7 +120,8 @@ src/gan_lab_tensorflow/
     session.py          background training thread + thread-safe controls
     server.py           FastAPI + WebSocket app + /api/runs serving endpoints
     registry.py         SQLite run registry (reproducible, servable runs)
-    static/             Canvas dashboard (index.html, app.js, styles.css)
+    derby.py            A/B derby — two synchronized engines racing a target
+    static/             Canvas dashboards (index/derby .html, .js, styles.css)
   data.py               synthetic distributions and batching
   models.py             TensorFlow generator/discriminator builders
   losses.py             GAN and WGAN-GP losses
@@ -133,8 +135,8 @@ Dockerfile  .github/workflows/ci.yml
 
 - **Phase 1 (done)** — live training stream, discriminator X-ray, steering cockpit, deterministic Demo Mode, Docker + CI.
 - **Phase 2 (done)** — SQLite run registry with config+seed reproducibility, a model-serving endpoint (`/api/runs/:id/sample`), and the 8-Gaussian ring benchmark.
-- **Phase 2 (remaining)** — a live MNIST "digits emerge from noise" tab wiring the DCGAN builders in; this one needs the `[tf]` extra and a GPU/faster cadence, so it is a TensorFlow-backed addition rather than part of the pure-NumPy real-time core.
-- **Phase 3** — an A/B "derby": two synchronized panels (Vanilla vs WGAN-GP) training the same target side by side; a time-travel scrubber over a frame ring buffer.
+- **Phase 3 (done)** — the A/B derby at [`/derby`](src/gan_lab_tensorflow/live/derby.py): two synchronized engines (Vanilla vs Wasserstein) racing the same target from the same seed, with a client-side time-travel scrubber.
+- **Backlog** — a live MNIST "digits emerge from noise" tab wiring the DCGAN builders in; this one needs the `[tf]` extra and a faster cadence, so it is a TensorFlow-backed addition rather than part of the pure-NumPy real-time core.
 
 ## Notes
 

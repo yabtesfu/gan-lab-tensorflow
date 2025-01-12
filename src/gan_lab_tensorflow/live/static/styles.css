@@ -178,3 +178,26 @@ input[type=range] { width: 150px; accent-color: var(--accent); }
   .panel-hero { grid-row: auto; min-height: 340px; }
   .panel { min-height: 240px; }
 }
+
+/* ---- A/B derby ---- */
+.pill-link { background: rgba(160,107,255,.14); color: var(--accent); text-decoration: none; }
+.pill-link:hover { background: rgba(160,107,255,.26); }
+.nav-link { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent); padding: 5px 11px; border-radius: 999px; background: rgba(160,107,255,.1); white-space: nowrap; }
+.nav-link:hover { background: rgba(160,107,255,.22); }
+.derby-note { font-size: 13px; color: var(--muted); background: rgba(255,255,255,.02); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; }
+.derby-note strong { color: var(--text); }
+.derby-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; }
+.derby-panel { transition: border-color .3s, box-shadow .3s; }
+.derby-panel.collapsed { border-color: rgba(255,93,108,.55); box-shadow: 0 0 0 1px rgba(255,93,108,.3), var(--shadow); }
+.derby-panel .tiny { font-size: 10px; font-weight: 500; color: var(--muted); letter-spacing: .02em; text-transform: none; margin-left: 6px; }
+.dcov { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.compare { padding: 10px 14px 12px; min-height: 150px; }
+.verdict { font-size: 12px; font-family: "SF Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
+.verdict.good { color: var(--good); }
+.verdict.bad { color: var(--bad); }
+.ctl-group.grow { flex: 1; min-width: 200px; }
+.scrub-row { display: flex; align-items: center; gap: 10px; }
+.scrub-row input[type=range] { flex: 1; width: auto; }
+.btn.small { padding: 6px 11px; font-size: 12px; }
+.btn.small.active { background: color-mix(in oklab, var(--good) 24%, transparent); border-color: var(--good); color: #eafff5; }
+@media (max-width: 860px) { .derby-grid { grid-template-columns: 1fr; } .derby-panel { min-height: 300px; } }

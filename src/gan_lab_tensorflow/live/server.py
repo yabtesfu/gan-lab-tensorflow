@@ -21,6 +21,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .derby import DerbySession
 from .engine import sample_generator
 from .registry import RunRegistry
 from .session import _EMIT_PERIOD, TrainingSession
@@ -33,13 +34,19 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 # One registry of reproducible runs for the whole process.
 registry = RunRegistry(os.environ.get("RUNS_DB", "runs.db"))
 
-# Single-session guard: one live training run at a time.
+# Single-session guards: one live run of each kind at a time.
 _session_busy = asyncio.Lock()
+_derby_busy = asyncio.Lock()
 
 
 @app.get("/")
 async def index() -> FileResponse:
     return FileResponse(str(_STATIC / "index.html"))
+
+
+@app.get("/derby")
+async def derby_page() -> FileResponse:
+    return FileResponse(str(_STATIC / "derby.html"))
 
 
 @app.get("/healthz")
@@ -112,6 +119,58 @@ async def ws_endpoint(ws: WebSocket) -> None:
             pass
         finally:
             session.stop()
+
+
+@app.websocket("/ws/derby")
+async def derby_ws(ws: WebSocket) -> None:
+    await ws.accept()
+    if _derby_busy.locked():
+        await ws.send_json({"type": "error", "message": "A derby is already running. Try again shortly."})
+        await ws.close()
+        return
+
+    async with _derby_busy:
+        session = DerbySession()
+        session.start()
+        send_lock = asyncio.Lock()
+
+        async def safe_send(payload: dict) -> None:
+            async with send_lock:
+                await ws.send_json(payload)
+
+        try:
+            await safe_send(session.state())
+            if session.latest_frame is not None:
+                await safe_send(session.latest_frame)
+            await asyncio.gather(
+                _derby_sender(safe_send, session),
+                _derby_receiver(ws, safe_send, session),
+            )
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.stop()
+
+
+async def _derby_sender(safe_send, session: DerbySession) -> None:
+    last_step = -1
+    while True:
+        await asyncio.sleep(_EMIT_PERIOD)
+        frame = session.latest_frame
+        if frame is None or frame["step"] == last_step:
+            continue
+        last_step = frame["step"]
+        await safe_send(frame)
+
+
+async def _derby_receiver(ws: WebSocket, safe_send, session: DerbySession) -> None:
+    while True:
+        message = await ws.receive_json()
+        session.apply_control(message)
+        await safe_send(session.state())
+        frame = session.latest_frame
+        if frame is not None:
+            await safe_send(frame)
 
 
 async def _sender(safe_send, session: TrainingSession) -> None:
